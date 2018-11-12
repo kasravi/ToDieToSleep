@@ -1,0 +1,23 @@
+{
+  "name": "yemen-2018",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./scripts/scripts.js",
+  "scripts": {
+    "serve": "browser-sync start --watch --server --index index.html",
+    "dev": "npm run serve",
+    "deploy": "gh-pages --branch gh-pages"
+  },
+  "prettier": {
+    "printWidth": 100
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "browser-sync": "^2.24.7"
+  },
+  "dependencies": {
+    "gh-pages": "^1.2.0"
+  }
+}

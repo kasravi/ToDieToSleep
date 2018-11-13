@@ -31,7 +31,7 @@ let selector;
 function preload() {
   this.load.image("tiles", "../assets/tilesets/tuxmon-sample-32px-extruded.png");
   this.load.tilemapTiledJSON("map", "../assets/tilemaps/tuxemon-town.json");
-  this.load.image('inventory', 'assets/images/inventory/01.png', 270, 180);
+  this.load.image('inventory', 'assets/images/inventory/i.png', 270, 180);
 
   // An atlas is a way to pack multiple images together into one texture. I'm using it to load all
   // the player animations (walking left, walking right, etc.) in one image. For more info see:
@@ -147,7 +147,7 @@ function create() {
   
   selector = this.add.graphics().setScrollFactor(0);
   selector.lineGradientStyle(2, 0xFFFFFF,0,0xFFFFFF,0, 1);
-  selector.strokeRect(190, 130, 65, 65);
+  selector.strokeRect(110, 40, 65, 65);
 
   // Debug graphics
   this.input.keyboard.once("keydown_D", event => {
@@ -178,17 +178,25 @@ if(showInventory){
   inventory.setDepth(40);
   selector.setDepth(40);
   
-  if (cursors.left.isDown) {
-    selector.x-=10;
-  } else if (cursors.right.isDown) {
-    selector.x+=10;;
+  if (this.input.keyboard.checkDown(cursors.left, 250)) {
+    if(selector.x>0) {
+      selector.x-=64;
+    }
+  } else if (this.input.keyboard.checkDown(cursors.right, 250)) {
+    if(selector.x<512) {
+      selector.x+=64;
+    }
   }
 
   // Vertical movement
-  if (cursors.up.isDown) {
-    selector.y-=10;
-  } else if (cursors.down.isDown) {
-    selector.y+=10;
+  if (this.input.keyboard.checkDown(cursors.up, 250)) {
+    if(selector.y>0) {
+      selector.y-=64;
+    }
+  } else if (this.input.keyboard.checkDown(cursors.down, 250)) {
+    if(selector.y<512-64) {
+      selector.y+=64;
+    }
   }
   //console.log(inventoryBag);
 }else{

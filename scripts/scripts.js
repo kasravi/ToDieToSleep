@@ -23,7 +23,10 @@ let player;
 let showDebug = false;
 let showInventory = false;
 let inventory;
+let inventoryBag = {tunes:['silence'], tools:[]};
 let camera;
+let narratorMet= [];
+let selector;
 
 function preload() {
   this.load.image("tiles", "../assets/tilesets/tuxmon-sample-32px-extruded.png");
@@ -49,6 +52,7 @@ function create() {
   const belowLayer = map.createStaticLayer("Below Player", tileset, 0, 0);
   const worldLayer = map.createStaticLayer("World", tileset, 0, 0);
   const aboveLayer = map.createStaticLayer("Above Player", tileset, 0, 0);
+
   //inventory = map.createStaticLayer("menu", tileset, 0, 0);
   inventory = this.add.sprite(400, 300, 'inventory')
      .setScrollFactor(0).setDepth(-40);
@@ -76,13 +80,18 @@ function create() {
 
   function meetNarator (player, narrator)
   {
-    narrator.disableBody(true, true);
+    //console.log(narrator.data.list.tune);
+    inventoryBag.tunes.push(narrator.data.list.tune);
+    narrator.destroy();
   }
+
   narratorObjects.forEach(narrator => {
-    //narrators.add(narrator)
+    let sprite = map.createFromObjects('Objects', narrator.id, {key: 'narrator'})[0];
+    sprite.visible=false;
+    narrators.add(sprite);
   });
 
-  this.physics.add.overlap(player, narrators, meetNarator, null, this);
+  this.physics.add.collider(player, narrators, meetNarator, null, this);
 
   // Watch the player and worldLayer for collisions, for the duration of the scene:
   this.physics.add.collider(player, worldLayer);
@@ -136,6 +145,10 @@ function create() {
     showInventory = !showInventory;
   })
   
+  selector = this.add.graphics().setScrollFactor(0);
+  selector.lineGradientStyle(2, 0xFFFFFF,0,0xFFFFFF,0, 1);
+  selector.strokeRect(190, 130, 65, 65);
+
   // Debug graphics
   this.input.keyboard.once("keydown_D", event => {
     // Turn on physics debugging to show player's hitbox
@@ -163,8 +176,25 @@ function update(time, delta) {
 if(showInventory){
   player.anims.stop();
   inventory.setDepth(40);
+  selector.setDepth(40);
+  
+  if (cursors.left.isDown) {
+    selector.x-=10;
+  } else if (cursors.right.isDown) {
+    selector.x+=10;;
+  }
+
+  // Vertical movement
+  if (cursors.up.isDown) {
+    selector.y-=10;
+  } else if (cursors.down.isDown) {
+    selector.y+=10;
+  }
+  //console.log(inventoryBag);
 }else{
   inventory.setDepth(-40);
+  selector.setDepth(-40);
+  
   // Horizontal movement
   if (cursors.left.isDown) {
     player.body.setVelocityX(-speed);

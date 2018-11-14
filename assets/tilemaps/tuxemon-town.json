@@ -17,7 +17,7 @@
          "name":"World",
          "opacity":1,
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":40,
          "x":0,
          "y":0
@@ -28,7 +28,7 @@
          "name":"Above Player",
          "opacity":1,
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":40,
          "x":0,
          "y":0
@@ -51,26 +51,6 @@
                 {
                  "ellipse":true,
                  "height":54,
-                 "id":277,
-                 "name":"narrator",
-                 "properties":
-                    {
-                     "tune":"lala"
-                    },
-                 "propertytypes":
-                    {
-                     "tune":"string"
-                    },
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":61,
-                 "x":34,
-                 "y":902
-                }, 
-                {
-                 "ellipse":true,
-                 "height":54,
                  "id":281,
                  "name":"narrator",
                  "properties":
@@ -85,8 +65,8 @@
                  "type":"",
                  "visible":true,
                  "width":61,
-                 "x":283.5,
-                 "y":-3
+                 "x":282.5,
+                 "y":36
                 }, 
                 {
                  "ellipse":true,
@@ -105,8 +85,8 @@
                  "type":"",
                  "visible":true,
                  "width":61,
-                 "x":749.5,
-                 "y":289
+                 "x":732.5,
+                 "y":308
                 }, 
                 {
                  "ellipse":true,
@@ -125,8 +105,28 @@
                  "type":"",
                  "visible":true,
                  "width":61,
-                 "x":863.5,
-                 "y":676
+                 "x":881.5,
+                 "y":702
+                }, 
+                {
+                 "ellipse":true,
+                 "height":54,
+                 "id":287,
+                 "name":"narrator",
+                 "properties":
+                    {
+                     "tune":"lala"
+                    },
+                 "propertytypes":
+                    {
+                     "tune":"string"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":61,
+                 "x":63.5,
+                 "y":924
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -134,7 +134,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":285,
+ "nextobjectid":288,
  "orientation":"orthogonal",
  "properties":
     {

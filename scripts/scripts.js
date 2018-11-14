@@ -23,10 +23,15 @@ let player;
 let showDebug = false;
 let showInventory = false;
 let inventory;
-let inventoryBag = {tunes:['silence'], tools:[]};
+let inventoryBag = {tunes:['_'], tools:[], lullaby:[], page:0};
+let lastInventoryBag = {};
 let camera;
 let narratorMet= [];
-let selector;
+//let selector;
+let inventorySelectorPosition = {x:0 , y:0}
+const inventoryBoxSize = 64;
+const inventoryMaxX = 8;
+const inventoryMaxY = 8;
 
 function preload() {
   this.load.image("tiles", "../assets/tilesets/tuxmon-sample-32px-extruded.png");
@@ -54,8 +59,14 @@ function create() {
   const aboveLayer = map.createStaticLayer("Above Player", tileset, 0, 0);
 
   //inventory = map.createStaticLayer("menu", tileset, 0, 0);
-  inventory = this.add.sprite(400, 300, 'inventory')
-     .setScrollFactor(0).setDepth(-40);
+  inventory = this.add.group();
+  inventory.add(this.add.sprite(400, 300, 'inventory').setScrollFactor(0));
+  let selector = this.add.graphics().setScrollFactor(0);
+  selector.lineGradientStyle(2, 0xFFFFFF,0,0xFFFFFF,0, 1);
+  selector.strokeRect(110, 40, 65, 65);
+  selector.name = "selector";
+  inventory.add(selector);
+  inventory.setDepth(-40);
 
   worldLayer.setCollisionByProperty({ collides: true });
 
@@ -145,9 +156,75 @@ function create() {
     showInventory = !showInventory;
   })
   
-  selector = this.add.graphics().setScrollFactor(0);
-  selector.lineGradientStyle(2, 0xFFFFFF,0,0xFFFFFF,0, 1);
-  selector.strokeRect(110, 40, 65, 65);
+  this.input.keyboard.on("keydown_R",event => {
+    inventoryBag.page++;
+    inventoryBag.page%=4;
+  })
+
+  this.input.keyboard.on('keydown_W', function (event) {
+    if(inventorySelectorPosition.y<1){
+      console.log(inventorySelectorPosition.x+inventoryMaxX*inventorySelectorPosition.y);
+    }
+
+    if(inventorySelectorPosition.y>=1){
+      let cid = inventorySelectorPosition.y+
+        (inventoryMaxY)*((inventorySelectorPosition.x>3?1:0)+inventoryBag.page*2);
+      let row = inventoryBag.lullaby.filter(i=>i.id===cid);
+      if(row && row.length>0){
+        if(inventorySelectorPosition.x===0||inventorySelectorPosition.x===4){
+          row[0].from++;
+          row[0].from%=inventoryBag.tunes.length;
+        } else if(inventorySelectorPosition.x===2||inventorySelectorPosition.x===6){
+          row[0].to++;
+          row[0].to%=inventoryBag.tunes.length;
+        } else if(inventorySelectorPosition.x===1||inventorySelectorPosition.x===5){
+          row[0].prob++;
+          row[0].prob%=10;
+        }
+      } else {
+        inventoryBag.lullaby.push({
+          id:cid,
+          from:0,
+          to:0,
+          prob:0});
+      }
+    }
+    console.log(inventoryBag.lullaby.map(f=>f.id).join(','));
+  });
+
+  this.input.keyboard.on('keydown_E', function (event) {
+    if(inventorySelectorPosition.y<1){
+      console.log(inventorySelectorPosition.x+inventoryMaxX*inventorySelectorPosition.y);
+    }
+
+    if(inventorySelectorPosition.y>=1){
+      let cid = inventorySelectorPosition.y+
+        (inventoryMaxY)*((inventorySelectorPosition.x>3?1:0)+inventoryBag.page*2);
+      let row = inventoryBag.lullaby.filter(i=>i.id===cid);
+      if(row && row.length>0){
+        if(inventorySelectorPosition.x===0||inventorySelectorPosition.x===3){
+          row[0].from--;
+          if(row[0].from<0)row[0].from+=inventoryBag.tunes.length;
+          row[0].from%=inventoryBag.tunes.length;
+        } else if(inventorySelectorPosition.x===2||inventorySelectorPosition.x===4){
+          row[0].to--;
+          if(row[0].to<0)row[0].to+=inventoryBag.tunes.length;
+          row[0].to%=inventoryBag.tunes.length;
+        } else if(inventorySelectorPosition.x===1||inventorySelectorPosition.x===5){
+          row[0].prob--;
+          if(row[0].prob<0)row[0].prob+=10;
+          row[0].prob%=10;
+        }
+      } else {
+        inventoryBag.lullaby.push({
+          id:cid,
+          from:0,
+          to:0,
+          prob:0});
+      }
+    }
+    
+  });
 
   // Debug graphics
   this.input.keyboard.once("keydown_D", event => {
@@ -167,6 +244,22 @@ function create() {
   });
 }
 
+const getSelector = f => f.getChildren().filter(g=>g.name==='selector')[0];
+const makeText = (text,y,x,self) => {
+  let t = self.add.text(16, 16, text, {
+    font: "18px monospace",
+    fill: "#FFFFFF",
+    padding: { x: 120, y: 50 }
+  }).setScrollFactor(0).setDepth(50);
+  t.x = x * inventoryBoxSize;
+  t.y = y * inventoryBoxSize;
+  t.name = 'inventoryItems';
+  return t;
+}
+const deleteTexts = (inventory) => {
+  inventory.getChildren().filter(f=>f.name === 'inventoryItems').map(f=>f.destroy());
+}
+
 function update(time, delta) {
   const speed = 175;
   const prevVelocity = player.body.velocity.clone();
@@ -176,32 +269,53 @@ function update(time, delta) {
 if(showInventory){
   player.anims.stop();
   inventory.setDepth(40);
-  selector.setDepth(40);
-  
+
+  if(JSON.stringify(lastInventoryBag) !== JSON.stringify(inventoryBag)){
+    console.log('update');
+    deleteTexts(inventory);
+    lastInventoryBag = JSON.parse(JSON.stringify(inventoryBag));
+    for(let i=0;i<inventoryBag.tunes.length;i++)
+      inventory.add(makeText(inventoryBag.tunes[i],0,i,this));
+    
+    if(inventoryBag.lullaby){
+      inventoryBag.lullaby.forEach(l=>{
+        if(l.id<(inventoryBag.page*(inventoryMaxY-1))||l.id>(2*(inventoryBag.page+1)*(inventoryMaxY-1))) return;
+        let y = l.id > ((inventoryMaxY-1)*(inventoryBag.page+1)) ? l.id - inventoryMaxY : l.id;
+        y %= (inventoryMaxY-1)*(inventoryBag.page+1)*2;
+        inventory.add(makeText(inventoryBag.tunes[l.from],y,0+(l.id>(inventoryMaxY-1)?4:0),this));
+      inventory.add(makeText(l.prob,y,1+(l.id>(inventoryMaxY-1)?4:0),this));
+      inventory.add(makeText(inventoryBag.tunes[l.to],y,2+(l.id>(inventoryMaxY-1)?4:0),this));
+      })
+    }
+  }
   if (this.input.keyboard.checkDown(cursors.left, 250)) {
-    if(selector.x>0) {
-      selector.x-=64;
+    if(inventorySelectorPosition.x>0) {
+      inventorySelectorPosition.x--;
+      getSelector(inventory).x=inventorySelectorPosition.x*inventoryBoxSize;
     }
   } else if (this.input.keyboard.checkDown(cursors.right, 250)) {
-    if(selector.x<512) {
-      selector.x+=64;
+    if(inventorySelectorPosition.x<inventoryMaxX) {
+      inventorySelectorPosition.x++;
+      getSelector(inventory).x=inventorySelectorPosition.x*inventoryBoxSize;
     }
   }
 
   // Vertical movement
   if (this.input.keyboard.checkDown(cursors.up, 250)) {
-    if(selector.y>0) {
-      selector.y-=64;
+    if(inventorySelectorPosition.y>0) {
+      inventorySelectorPosition.y--;
+      getSelector(inventory).y=inventorySelectorPosition.y*inventoryBoxSize;
     }
   } else if (this.input.keyboard.checkDown(cursors.down, 250)) {
-    if(selector.y<512-64) {
-      selector.y+=64;
+    if(inventorySelectorPosition.y<inventoryMaxY-1) {
+      inventorySelectorPosition.y++;
+      getSelector(inventory).y=inventorySelectorPosition.y*inventoryBoxSize;
     }
   }
   //console.log(inventoryBag);
 }else{
+  inventorySelectorPosition = {x:0 , y:0};
   inventory.setDepth(-40);
-  selector.setDepth(-40);
   
   // Horizontal movement
   if (cursors.left.isDown) {

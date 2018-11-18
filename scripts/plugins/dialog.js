@@ -1,4 +1,4 @@
-class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
+class Dialog extends Phaser.Plugins.ScenePlugin {
 
     constructor(scene, pluginManager) {
         super(scene, pluginManager);
@@ -94,8 +94,8 @@ class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
         var gameHeight = this._getGameHeight();
         var gameWidth = this._getGameWidth();
         var dimensions = this._calculateWindowDimensions(gameWidth, gameHeight);
-        this.graphics = this.scene.add.graphics();
-
+        this.graphics = this.scene.add.graphics().setDepth(100).setScrollFactor(0);
+        
         this._createOuterWindow(dimensions.x, dimensions.y, dimensions.rectWidth, dimensions.rectHeight);
         this._createInnerWindow(dimensions.x, dimensions.y, dimensions.rectWidth, dimensions.rectHeight);
     }
@@ -131,12 +131,21 @@ class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
         if (this.closeBtn) this.closeBtn.visible = this.visible;
     }
 
+    closeWindow() {
+        this.visible = false;
+        if (this.text) this.text.visible = false;
+        if (this.graphics) this.graphics.visible = false;
+        if (this.closeBtn) this.closeBtn.visible = false;
+    }
+
     setText(text) {
+        this.wholeText = text;
         this._setText(text);
     }
 
     setText(text, animate) {
         // Reset the dialog
+        this.wholeText = text;
         this.eventCounter = 0;
         this.dialog = text.split('');
         if (this.timedEvent) this.timedEvent.remove();
@@ -145,6 +154,7 @@ class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
         this._setText(tempText);
 
         if (animate) {
+            this.animationInProgress = true;
             this.timedEvent = this.scene.time.addEvent({
                 delay: 150 - (this.dialogSpeed * 30),
                 callback: this._animateText,
@@ -154,10 +164,21 @@ class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
         }
     }
 
+    stop(){
+        if(this.animationInProgress){
+            this.animationInProgress = false;
+            this.timedEvent.remove();
+            this.text.setText(this.wholeText);
+        } else {
+            this.closeWindow();
+        }
+    }
+
     _animateText() {
         this.eventCounter++;
         this.text.setText(this.text.text + this.dialog[this.eventCounter - 1]);
         if (this.eventCounter === this.dialog.length) {
+            this.animationInProgress = false;
             this.timedEvent.remove();
         }
     }
@@ -178,6 +199,7 @@ class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
                 wordWrap: { width: this._getGameWidth() - (this.padding * 2) - 25 }
             }
         });
+        this.text.setDepth(100).setScrollFactor(0);
     }
 }
 
@@ -188,7 +210,7 @@ class RandomNamePlugin extends Phaser.Plugins.ScenePlugin {
 //     height: 600,
 //     plugins: {
 //         scene: [
-//             { key: 'randomNamePlugin', plugin: RandomNamePlugin, mapping: 'randomPlugin' }
+//             { key: 'Dialog', plugin: Dialog, mapping: 'randomPlugin' }
 //         ]
 //     },
 //     scene: {

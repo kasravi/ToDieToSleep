@@ -10,6 +10,12 @@ const config = {
       gravity: { y: 0 }
     }
   },
+  plugins: {
+      scene: [
+          { key: 'dialog', plugin: Dialog, mapping: 'dialog' },
+          { key: 'sing', plugin: Sing, mapping: 'sing' }
+      ]
+  },
   scene: {
     preload: preload,
     create: create,
@@ -23,7 +29,7 @@ let player;
 let showDebug = false;
 let showInventory = false;
 let inventory;
-let inventoryBag = {tunes:['_'], tools:[], lullaby:[], page:0};
+let inventoryBag = {tunes:[' ,4n'], tools:[], lullaby:[], page:0};
 let lastInventoryBag = {};
 let camera;
 let narratorMet= [];
@@ -32,11 +38,15 @@ let inventorySelectorPosition = {x:0 , y:0}
 const inventoryBoxSize = 64;
 const inventoryMaxX = 8;
 const inventoryMaxY = 8;
+let dialog;
+let sing;
 
 function preload() {
   this.load.image("tiles", "../assets/tilesets/tuxmon-sample-32px-extruded.png");
   this.load.tilemapTiledJSON("map", "../assets/tilemaps/tuxemon-town.json");
-  this.load.image('inventory', 'assets/images/inventory/i.png', 270, 180);
+  this.load.image('inventory', '../assets/images/inventory/i.png', 270, 180);
+  this.load.image('note', '../assets/images/note2.png', 40, 40);
+  this.load.image('rest', '../assets/images/rest2.png', 40, 40);
 
   // An atlas is a way to pack multiple images together into one texture. I'm using it to load all
   // the player animations (walking left, walking right, etc.) in one image. For more info see:
@@ -49,6 +59,8 @@ function preload() {
 function create() {
   const map = this.make.tilemap({ key: "map" });
 
+  dialog= this.dialog;
+  sing = this.sing;
   // Parameters are the name you gave the tileset in Tiled and then the key of the tileset image in
   // Phaser's cache (i.e. the name you used in preload)
   const tileset = map.addTilesetImage("tuxmon-sample-32px-extruded", "tiles");
@@ -74,7 +86,6 @@ function create() {
   // want the "Above Player" layer to sit on top of the player, so we explicitly give it a depth.
   // Higher depths will sit on top of lower depth objects.
   aboveLayer.setDepth(10);
-  //inventory.setDepth(-40);
 
   // Object layers in Tiled let you embed extra info into a map - like a spawn point or custom
   // collision shapes. In the tmx file, there's an object layer with a point named "Spawn Point"
@@ -93,6 +104,8 @@ function create() {
   {
     //console.log(narrator.data.list.tune);
     inventoryBag.tunes.push(narrator.data.list.tune);
+    dialog.init();
+    dialog.setText(narrator.data.list.dialog,true);
     narrator.destroy();
   }
 
@@ -141,6 +154,9 @@ function create() {
 
   cursors = this.input.keyboard.createCursorKeys();
 
+
+
+
   // Help text that has a "fixed" position on the screen
   this.add
     .text(16, 16, 'Arrow keys to move\nPress "D" to show hitboxes', {
@@ -156,38 +172,96 @@ function create() {
     showInventory = !showInventory;
   })
   
+  // var synth = new Tone.PolySynth(3, Tone.FMSynth).toMaster();
+  // let measureTime = 0.5;
+  // synth.triggerAttackRelease(['C4'], 0.2, measureTime);
+  // synth.triggerAttackRelease(['D4'], 0.2, measureTime + 0.25);
+  // synth.triggerAttackRelease(['E4'], 0.2, measureTime + 0.5);
+  // synth.triggerAttackRelease(['D4'], 0.2, measureTime + 0.75);
+  //   var synth = new Tone.PolySynth(3, Tone.FMSynth).toMaster();
+
+
+  // synth.triggerAttackRelease('C4', 0.2, 0.5);
+  // synth.triggerAttackRelease('C4', 0.2,  1);
+
+  this.input.keyboard.on("keydown_T",event => {
+    if(!sing.isSinging()){
+      sing.init(buildWalkingNodes(inventoryBag));
+      sing.reset()
+      sing.sing();
+    } else {
+      sing.stop();
+    }
+  });
+
+  const buildWalkingNodes = (bag)=>{
+    if(!bag) return;
+    let grouped = groupBy(bag.lullaby, 'from');
+    return Object.keys(grouped).map(k=>{
+      return {
+        id: parseInt(k),
+        content: bag.tunes[k],
+        next: grouped[k].reduce((acc,cur)=>{
+          let fil = acc.filter(f=> f.to === cur.to);
+          if(fil.length>0){
+            fil[0].prob += cur.prob;
+          } else {
+            acc.push({
+              id: parseInt(cur.to),
+              prob: cur.prob
+            })
+          }
+          return acc;
+        },[])
+      }
+    })
+  }
+
+  var groupBy = function(xs, key) {
+    return xs.reduce(function(rv, x) {
+      (rv[x[key]] = rv[x[key]] || []).push(x);
+      return rv;
+    }, {});
+  };
+
   this.input.keyboard.on("keydown_R",event => {
     inventoryBag.page++;
     inventoryBag.page%=4;
   })
 
   this.input.keyboard.on('keydown_W', function (event) {
-    if(inventorySelectorPosition.y<1){
-      console.log(inventorySelectorPosition.x+inventoryMaxX*inventorySelectorPosition.y);
-    }
-
-    if(inventorySelectorPosition.y>=1){
-      let cid = inventorySelectorPosition.y+
-        (inventoryMaxY)*((inventorySelectorPosition.x>3?1:0)+inventoryBag.page*2);
-      let row = inventoryBag.lullaby.filter(i=>i.id===cid);
-      if(row && row.length>0){
-        if(inventorySelectorPosition.x===0||inventorySelectorPosition.x===4){
-          row[0].from++;
-          row[0].from%=inventoryBag.tunes.length;
-        } else if(inventorySelectorPosition.x===2||inventorySelectorPosition.x===6){
-          row[0].to++;
-          row[0].to%=inventoryBag.tunes.length;
-        } else if(inventorySelectorPosition.x===1||inventorySelectorPosition.x===5){
-          row[0].prob++;
-          row[0].prob%=10;
+    if(showInventory){
+      if(inventorySelectorPosition.y<1){
+        let pos = inventorySelectorPosition.x+inventoryMaxX*inventorySelectorPosition.y;
+        console.log(inventoryBag);
+        if(pos>0){
+          sing.playSegment(inventoryBag.tunes[pos]);
         }
-      } else {
-        inventoryBag.lullaby.push({
-          id:cid,
-          from:0,
-          to:0,
-          prob:0});
+      } else if(inventorySelectorPosition.y>=1){
+        let cid = inventorySelectorPosition.y+
+          (inventoryMaxY)*((inventorySelectorPosition.x>3?1:0)+inventoryBag.page*2);
+        let row = inventoryBag.lullaby.filter(i=>i.id===cid);
+        if(row && row.length>0){
+          if(inventorySelectorPosition.x===0||inventorySelectorPosition.x===4){
+            row[0].from++;
+            row[0].from%=inventoryBag.tunes.length;
+          } else if(inventorySelectorPosition.x===2||inventorySelectorPosition.x===6){
+            row[0].to++;
+            row[0].to%=inventoryBag.tunes.length;
+          } else if(inventorySelectorPosition.x===1||inventorySelectorPosition.x===5){
+            row[0].prob++;
+            row[0].prob%=10;
+          }
+        } else {
+          inventoryBag.lullaby.push({
+            id:cid,
+            from:0,
+            to:0,
+            prob:0});
+        }
       }
+    } else{
+      dialog.stop();
     }
     console.log(inventoryBag.lullaby.map(f=>f.id).join(','));
   });
@@ -227,9 +301,13 @@ function create() {
   });
 
   // Debug graphics
-  this.input.keyboard.once("keydown_D", event => {
+  this.input.keyboard.on("keydown_D", event => {
     // Turn on physics debugging to show player's hitbox
     this.physics.world.createDebugGraphic();
+
+    narrators.children.entries.forEach(narrator => {
+      narrator.visible=!narrator.visible;
+    });
 
     // Create worldLayer collision graphic above the player, but below the help text
     const graphics = this.add
@@ -245,14 +323,22 @@ function create() {
 }
 
 const getSelector = f => f.getChildren().filter(g=>g.name==='selector')[0];
-const makeText = (text,y,x,self) => {
-  let t = self.add.text(16, 16, text, {
-    font: "18px monospace",
-    fill: "#FFFFFF",
-    padding: { x: 120, y: 50 }
-  }).setScrollFactor(0).setDepth(50);
-  t.x = x * inventoryBoxSize;
-  t.y = y * inventoryBoxSize;
+const makeText = (text,y,x,self, prob) => {
+  let t;
+  if(!prob){
+    const tints = [0xfff533, 0xff2211, 0x112233, 0xf3f3f3, 0x343434];
+    t = self.add.sprite(145, 70, text===' ,4n'?'rest':'note').setScrollFactor(0).setDepth(50);
+    t.setTint(tints[inventoryBag.tunes.indexOf(text)]);
+  } else {
+    t = self.add.text(16, 16, text, {
+        font: "24px monospace",
+        fill: "#FFFFFF",
+        padding: { x: 120, y: 40 }
+      }).setScrollFactor(0).setDepth(50);
+  }
+  
+  t.x += x * inventoryBoxSize;
+  t.y += y * inventoryBoxSize;
   t.name = 'inventoryItems';
   return t;
 }
@@ -283,7 +369,7 @@ if(showInventory){
         let y = l.id > ((inventoryMaxY-1)*(inventoryBag.page+1)) ? l.id - inventoryMaxY : l.id;
         y %= (inventoryMaxY-1)*(inventoryBag.page+1)*2;
         inventory.add(makeText(inventoryBag.tunes[l.from],y,0+(l.id>(inventoryMaxY-1)?4:0),this));
-      inventory.add(makeText(l.prob,y,1+(l.id>(inventoryMaxY-1)?4:0),this));
+      inventory.add(makeText(l.prob,y,1+(l.id>(inventoryMaxY-1)?4:0),this,true));
       inventory.add(makeText(inventoryBag.tunes[l.to],y,2+(l.id>(inventoryMaxY-1)?4:0),this));
       })
     }

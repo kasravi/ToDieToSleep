@@ -1,49 +1,31 @@
-const config = {
-  type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  parent: "game-container",
-  pixelArt: true,
-  physics: {
-    default: "arcade",
-    arcade: {
-      gravity: { y: 0 }
-    }
-  },
-  plugins: {
-      scene: [
-          { key: 'dialog', plugin: Dialog, mapping: 'dialog' },
-          { key: 'sing', plugin: Sing, mapping: 'sing' }
-      ]
-  },
-  scene: {
-    preload: preload,
-    create: create,
-    update: update
+class SceneBuilder extends Phaser.Scene {
+
+  constructor(name) {
+    super();
+    this.name = name;
+
+    Phaser.Scene.call(this, { key: name });
+    this.cursors;
+    this.player;
+    this.showDebug = false;
+    this.showInventory = false;
+    this.inventory;
+    this.inventoryBag = {tunes:[' ,4n'], tools:[], lullaby:[], page:0};
+    this.lastInventoryBag = {};
+    this.camera;
+    this.narratorMet= [];
+    this.isNearChild = false;
+    this.inventorySelectorPosition = {x:0 , y:0}
+    this.inventoryBoxSize = 64;
+    this.inventoryMaxX = 8;
+    this.inventoryMaxY = 8;
+    this.dialog;
+    this.sing;
   }
-};
 
-const game = new Phaser.Game(config);
-let cursors;
-let player;
-let showDebug = false;
-let showInventory = false;
-let inventory;
-let inventoryBag = {tunes:[' ,4n'], tools:[], lullaby:[], page:0};
-let lastInventoryBag = {};
-let camera;
-let narratorMet= [];
-//let selector;
-let inventorySelectorPosition = {x:0 , y:0}
-const inventoryBoxSize = 64;
-const inventoryMaxX = 8;
-const inventoryMaxY = 8;
-let dialog;
-let sing;
-
-function preload() {
-  this.load.image("tiles", "../assets/tilesets/tuxmon-sample-32px-extruded.png");
-  this.load.tilemapTiledJSON("map", "../assets/tilemaps/tuxemon-town.json");
+preload() {
+  this.load.image("tiles", "../assets/tilesets/tileset.png");
+  this.load.tilemapTiledJSON("map"+this.name, "../assets/tilemaps/" + this.name + "/map.json");
   this.load.image('inventory', '../assets/images/inventory/i.png', 270, 180);
   this.load.image('note', '../assets/images/note2.png', 40, 40);
   this.load.image('rest', '../assets/images/rest2.png', 40, 40);
@@ -56,11 +38,11 @@ function preload() {
   this.load.atlas("atlas", "../assets/atlas/atlas.png", "../assets/atlas/atlas.json");
 }
 
-function create() {
-  const map = this.make.tilemap({ key: "map" });
+create() {
+  //this.scene.start('2'); next level name
 
-  dialog= this.dialog;
-  sing = this.sing;
+  const map = this.make.tilemap({ key: "map"+this.name });
+
   // Parameters are the name you gave the tileset in Tiled and then the key of the tileset image in
   // Phaser's cache (i.e. the name you used in preload)
   const tileset = map.addTilesetImage("tuxmon-sample-32px-extruded", "tiles");
@@ -71,14 +53,14 @@ function create() {
   const aboveLayer = map.createStaticLayer("Above Player", tileset, 0, 0);
 
   //inventory = map.createStaticLayer("menu", tileset, 0, 0);
-  inventory = this.add.group();
-  inventory.add(this.add.sprite(400, 300, 'inventory').setScrollFactor(0));
+  this.inventory = this.add.group();
+  this.inventory.add(this.add.sprite(400, 300, 'inventory').setScrollFactor(0));
   let selector = this.add.graphics().setScrollFactor(0);
   selector.lineGradientStyle(2, 0xFFFFFF,0,0xFFFFFF,0, 1);
   selector.strokeRect(110, 40, 65, 65);
   selector.name = "selector";
-  inventory.add(selector);
-  inventory.setDepth(-40);
+  this.inventory.add(selector);
+  this.inventory.setDepth(-40);
 
   worldLayer.setCollisionByProperty({ collides: true });
 
@@ -91,11 +73,13 @@ function create() {
   // collision shapes. In the tmx file, there's an object layer with a point named "Spawn Point"
   const spawnPoint = map.findObject("Objects", obj => obj.name === "Spawn Point");
   const narratorObjects = map.objects[0].objects.filter(obj => obj.name === "narrator");
+  const childsObjects = map.objects[0].objects.filter(obj => obj.name === "child");
   let narrators = this.physics.add.group();
+  let childs = this.physics.add.group();
 
   // Create a sprite with physics enabled via the physics system. The image used for the sprite has
   // a bit of whitespace, so I'm using setSize & setOffset to control the size of the player's body.
-  player = this.physics.add
+  this.player = this.physics.add
     .sprite(spawnPoint.x, spawnPoint.y, "atlas", "misa-front")
     .setSize(30, 40)
     .setOffset(0, 24);
@@ -103,9 +87,9 @@ function create() {
   function meetNarator (player, narrator)
   {
     //console.log(narrator.data.list.tune);
-    inventoryBag.tunes.push(narrator.data.list.tune);
-    dialog.init();
-    dialog.setText(narrator.data.list.dialog,true);
+    this.inventoryBag.tunes.push(narrator.data.list.tune);
+    this.dialog.init();
+    this.dialog.setText(narrator.data.list.dialog,true);
     narrator.destroy();
   }
 
@@ -115,10 +99,24 @@ function create() {
     narrators.add(sprite);
   });
 
-  this.physics.add.collider(player, narrators, meetNarator, null, this);
+  this.physics.add.collider(this.player, narrators, meetNarator, null, this);
+
+  function meetChild (player, child)
+  {
+    this.sing.setTheLullaby(child.data.list.lullaby.split(';'));
+    this.isNearChild = true;
+  }
+
+  childsObjects.forEach(narrator => {
+    let sprite = map.createFromObjects('Objects', narrator.id, {key: 'child'})[0];
+    sprite.visible=false;
+    childs.add(sprite);
+  });
+
+  this.physics.add.collider(this.player, childs, meetChild, null, this);
 
   // Watch the player and worldLayer for collisions, for the duration of the scene:
-  this.physics.add.collider(player, worldLayer);
+  this.physics.add.collider(this.player, worldLayer);
 
   // Create the player's walking animations from the texture atlas. These are stored in the global
   // animation manager so any sprite can access them.
@@ -148,49 +146,36 @@ function create() {
     repeat: -1
   });
 
-  camera = this.cameras.main;
-  camera.startFollow(player);
-  camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+  this.camera = this.cameras.main;
+  this.camera.startFollow(this.player);
+  this.camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-  cursors = this.input.keyboard.createCursorKeys();
+  this.cursors = this.input.keyboard.createCursorKeys();
 
-
-
-
-  // Help text that has a "fixed" position on the screen
-  this.add
-    .text(16, 16, 'Arrow keys to move\nPress "D" to show hitboxes', {
-      font: "18px monospace",
-      fill: "#000000",
-      padding: { x: 20, y: 10 },
-      backgroundColor: "#ffffff"
-    })
-    .setScrollFactor(0)
-    .setDepth(30);
+  // this.add
+  //   .text(16, 16, 'Arrow keys to move\nPress "D" to show hitboxes', {
+  //     font: "18px monospace",
+  //     fill: "#000000",
+  //     padding: { x: 20, y: 10 },
+  //     backgroundColor: "#ffffff"
+  //   })
+  //   .setScrollFactor(0)
+  //   .setDepth(30);
 
   this.input.keyboard.on("keydown_Q",event => {
-    showInventory = !showInventory;
+    this.showInventory = !this.showInventory;
   })
   
-  // var synth = new Tone.PolySynth(3, Tone.FMSynth).toMaster();
-  // let measureTime = 0.5;
-  // synth.triggerAttackRelease(['C4'], 0.2, measureTime);
-  // synth.triggerAttackRelease(['D4'], 0.2, measureTime + 0.25);
-  // synth.triggerAttackRelease(['E4'], 0.2, measureTime + 0.5);
-  // synth.triggerAttackRelease(['D4'], 0.2, measureTime + 0.75);
-  //   var synth = new Tone.PolySynth(3, Tone.FMSynth).toMaster();
-
-
-  // synth.triggerAttackRelease('C4', 0.2, 0.5);
-  // synth.triggerAttackRelease('C4', 0.2,  1);
-
   this.input.keyboard.on("keydown_T",event => {
-    if(!sing.isSinging()){
-      sing.init(buildWalkingNodes(inventoryBag));
-      sing.reset()
-      sing.sing();
+    if(!this.sing.isSinging()){
+      this.sing.init(buildWalkingNodes(this.inventoryBag));
+      this.sing.reset()
+      this.sing.sing();
+      if(this.isNearChild){
+        this.sing.recognized().then(()=>this.scene.start('2'));
+      }
     } else {
-      sing.stop();
+      this.sing.stop();
     }
   });
 
@@ -224,36 +209,37 @@ function create() {
     }, {});
   };
 
+  let self = this;
   this.input.keyboard.on("keydown_R",event => {
-    inventoryBag.page++;
-    inventoryBag.page%=4;
+    self.inventoryBag.page++;
+    self.inventoryBag.page%=4;
   })
 
   this.input.keyboard.on('keydown_W', function (event) {
-    if(showInventory){
-      if(inventorySelectorPosition.y<1){
-        let pos = inventorySelectorPosition.x+inventoryMaxX*inventorySelectorPosition.y;
-        console.log(inventoryBag);
+    if(self.showInventory){
+      if(self.inventorySelectorPosition.y<1){
+        let pos = self.inventorySelectorPosition.x+self.inventoryMaxX*self.inventorySelectorPosition.y;
+        console.log(self.inventoryBag);
         if(pos>0){
-          sing.playSegment(inventoryBag.tunes[pos]);
+          self.sing.playSegment(self.inventoryBag.tunes[pos]);
         }
-      } else if(inventorySelectorPosition.y>=1){
-        let cid = inventorySelectorPosition.y+
-          (inventoryMaxY)*((inventorySelectorPosition.x>3?1:0)+inventoryBag.page*2);
-        let row = inventoryBag.lullaby.filter(i=>i.id===cid);
+      } else if(self.inventorySelectorPosition.y>=1){
+        let cid = self.inventorySelectorPosition.y+
+          (self.inventoryMaxY)*((self.inventorySelectorPosition.x>3?1:0)+self.inventoryBag.page*2);
+        let row = self.inventoryBag.lullaby.filter(i=>i.id===cid);
         if(row && row.length>0){
-          if(inventorySelectorPosition.x===0||inventorySelectorPosition.x===4){
+          if(self.inventorySelectorPosition.x===0||self.inventorySelectorPosition.x===4){
             row[0].from++;
-            row[0].from%=inventoryBag.tunes.length;
-          } else if(inventorySelectorPosition.x===2||inventorySelectorPosition.x===6){
+            row[0].from%=self.inventoryBag.tunes.length;
+          } else if(self.inventorySelectorPosition.x===2||self.inventorySelectorPosition.x===6){
             row[0].to++;
-            row[0].to%=inventoryBag.tunes.length;
-          } else if(inventorySelectorPosition.x===1||inventorySelectorPosition.x===5){
+            row[0].to%=self.inventoryBag.tunes.length;
+          } else if(self.inventorySelectorPosition.x===1||self.inventorySelectorPosition.x===5){
             row[0].prob++;
             row[0].prob%=10;
           }
         } else {
-          inventoryBag.lullaby.push({
+          self.inventoryBag.lullaby.push({
             id:cid,
             from:0,
             to:0,
@@ -261,36 +247,36 @@ function create() {
         }
       }
     } else{
-      dialog.stop();
+      self.dialog.stop();
     }
-    console.log(inventoryBag.lullaby.map(f=>f.id).join(','));
+    console.log(self.inventoryBag.lullaby.map(f=>f.id).join(','));
   });
 
   this.input.keyboard.on('keydown_E', function (event) {
-    if(inventorySelectorPosition.y<1){
-      console.log(inventorySelectorPosition.x+inventoryMaxX*inventorySelectorPosition.y);
+    if(self.inventorySelectorPosition.y<1){
+      console.log(self.inventorySelectorPosition.x+self.inventoryMaxX*self.inventorySelectorPosition.y);
     }
 
-    if(inventorySelectorPosition.y>=1){
-      let cid = inventorySelectorPosition.y+
-        (inventoryMaxY)*((inventorySelectorPosition.x>3?1:0)+inventoryBag.page*2);
-      let row = inventoryBag.lullaby.filter(i=>i.id===cid);
+    if(self.inventorySelectorPosition.y>=1){
+      let cid = self.inventorySelectorPosition.y+
+        (self.inventoryMaxY)*((self.inventorySelectorPosition.x>3?1:0)+self.inventoryBag.page*2);
+      let row = self.inventoryBag.lullaby.filter(i=>i.id===cid);
       if(row && row.length>0){
-        if(inventorySelectorPosition.x===0||inventorySelectorPosition.x===3){
+        if(self.inventorySelectorPosition.x===0||self.inventorySelectorPosition.x===3){
           row[0].from--;
-          if(row[0].from<0)row[0].from+=inventoryBag.tunes.length;
-          row[0].from%=inventoryBag.tunes.length;
-        } else if(inventorySelectorPosition.x===2||inventorySelectorPosition.x===4){
+          if(row[0].from<0)row[0].from+=self.inventoryBag.tunes.length;
+          row[0].from%=self.inventoryBag.tunes.length;
+        } else if(self.inventorySelectorPosition.x===2||self.inventorySelectorPosition.x===4){
           row[0].to--;
-          if(row[0].to<0)row[0].to+=inventoryBag.tunes.length;
-          row[0].to%=inventoryBag.tunes.length;
-        } else if(inventorySelectorPosition.x===1||inventorySelectorPosition.x===5){
+          if(row[0].to<0)row[0].to+=self.inventoryBag.tunes.length;
+          row[0].to%=self.inventoryBag.tunes.length;
+        } else if(self.inventorySelectorPosition.x===1||self.inventorySelectorPosition.x===5){
           row[0].prob--;
           if(row[0].prob<0)row[0].prob+=10;
           row[0].prob%=10;
         }
       } else {
-        inventoryBag.lullaby.push({
+        self.inventoryBag.lullaby.push({
           id:cid,
           from:0,
           to:0,
@@ -303,14 +289,14 @@ function create() {
   // Debug graphics
   this.input.keyboard.on("keydown_D", event => {
     // Turn on physics debugging to show player's hitbox
-    this.physics.world.createDebugGraphic();
+    self.physics.world.createDebugGraphic();
 
     narrators.children.entries.forEach(narrator => {
       narrator.visible=!narrator.visible;
     });
 
     // Create worldLayer collision graphic above the player, but below the help text
-    const graphics = this.add
+    const graphics = self.add
       .graphics()
       .setAlpha(0.75)
       .setDepth(20);
@@ -322,13 +308,13 @@ function create() {
   });
 }
 
-const getSelector = f => f.getChildren().filter(g=>g.name==='selector')[0];
-const makeText = (text,y,x,self, prob) => {
+getSelector(f){ return f.getChildren().filter(g=>g.name==='selector')[0];}
+makeText(text,y,x,self, prob){
   let t;
   if(!prob){
     const tints = [0xfff533, 0xff2211, 0x112233, 0xf3f3f3, 0x343434];
     t = self.add.sprite(145, 70, text===' ,4n'?'rest':'note').setScrollFactor(0).setDepth(50);
-    t.setTint(tints[inventoryBag.tunes.indexOf(text)]);
+    t.setTint(tints[this.inventoryBag.tunes.indexOf(text)]);
   } else {
     t = self.add.text(16, 16, text, {
         font: "24px monospace",
@@ -337,106 +323,107 @@ const makeText = (text,y,x,self, prob) => {
       }).setScrollFactor(0).setDepth(50);
   }
   
-  t.x += x * inventoryBoxSize;
-  t.y += y * inventoryBoxSize;
+  t.x += x * this.inventoryBoxSize;
+  t.y += y * this.inventoryBoxSize;
   t.name = 'inventoryItems';
   return t;
 }
-const deleteTexts = (inventory) => {
+deleteTexts(inventory){
   inventory.getChildren().filter(f=>f.name === 'inventoryItems').map(f=>f.destroy());
 }
 
-function update(time, delta) {
+update(time, delta) {
   const speed = 175;
-  const prevVelocity = player.body.velocity.clone();
+  const prevVelocity = this.player.body.velocity.clone();
 
   // Stop any previous movement from the last frame
-  player.body.setVelocity(0);
-if(showInventory){
-  player.anims.stop();
-  inventory.setDepth(40);
+  this.player.body.setVelocity(0);
+if(this.showInventory){
+  this.player.anims.stop();
+  this.inventory.setDepth(40);
 
-  if(JSON.stringify(lastInventoryBag) !== JSON.stringify(inventoryBag)){
+  if(JSON.stringify(this.lastInventoryBag) !== JSON.stringify(this.inventoryBag)){
     console.log('update');
-    deleteTexts(inventory);
-    lastInventoryBag = JSON.parse(JSON.stringify(inventoryBag));
-    for(let i=0;i<inventoryBag.tunes.length;i++)
-      inventory.add(makeText(inventoryBag.tunes[i],0,i,this));
+    this.deleteTexts(this.inventory);
+    this.lastInventoryBag = JSON.parse(JSON.stringify(this.inventoryBag));
+    for(let i=0;i<this.inventoryBag.tunes.length;i++)
+      this.inventory.add(this.makeText(this.inventoryBag.tunes[i],0,i,this));
     
-    if(inventoryBag.lullaby){
-      inventoryBag.lullaby.forEach(l=>{
-        if(l.id<(inventoryBag.page*(inventoryMaxY-1))||l.id>(2*(inventoryBag.page+1)*(inventoryMaxY-1))) return;
-        let y = l.id > ((inventoryMaxY-1)*(inventoryBag.page+1)) ? l.id - inventoryMaxY : l.id;
-        y %= (inventoryMaxY-1)*(inventoryBag.page+1)*2;
-        inventory.add(makeText(inventoryBag.tunes[l.from],y,0+(l.id>(inventoryMaxY-1)?4:0),this));
-      inventory.add(makeText(l.prob,y,1+(l.id>(inventoryMaxY-1)?4:0),this,true));
-      inventory.add(makeText(inventoryBag.tunes[l.to],y,2+(l.id>(inventoryMaxY-1)?4:0),this));
+    if(this.inventoryBag.lullaby){
+      this.inventoryBag.lullaby.forEach(l=>{
+        if(l.id<(this.inventoryBag.page*(this.inventoryMaxY-1))||l.id>(2*(this.inventoryBag.page+1)*(this.inventoryMaxY-1))) return;
+        let y = l.id > ((this.inventoryMaxY-1)*(this.inventoryBag.page+1)) ? l.id - this.inventoryMaxY : l.id;
+        y %= (this.inventoryMaxY-1)*(this.inventoryBag.page+1)*2;
+        this.inventory.add(this.makeText(this.inventoryBag.tunes[l.from],y,0+(l.id>(this.inventoryMaxY-1)?4:0),this));
+      this.inventory.add(this.makeText(l.prob,y,1+(l.id>(this.inventoryMaxY-1)?4:0),this,true));
+      this.inventory.add(this.makeText(this.inventoryBag.tunes[l.to],y,2+(l.id>(this.inventoryMaxY-1)?4:0),this));
       })
     }
   }
-  if (this.input.keyboard.checkDown(cursors.left, 250)) {
-    if(inventorySelectorPosition.x>0) {
-      inventorySelectorPosition.x--;
-      getSelector(inventory).x=inventorySelectorPosition.x*inventoryBoxSize;
+  if (this.input.keyboard.checkDown(this.cursors.left, 250)) {
+    if(this.inventorySelectorPosition.x>0) {
+      this.inventorySelectorPosition.x--;
+      this.getSelector(this.inventory).x=this.inventorySelectorPosition.x*this.inventoryBoxSize;
     }
-  } else if (this.input.keyboard.checkDown(cursors.right, 250)) {
-    if(inventorySelectorPosition.x<inventoryMaxX) {
-      inventorySelectorPosition.x++;
-      getSelector(inventory).x=inventorySelectorPosition.x*inventoryBoxSize;
+  } else if (this.input.keyboard.checkDown(this.cursors.right, 250)) {
+    if(this.inventorySelectorPosition.x<this.inventoryMaxX) {
+      this.inventorySelectorPosition.x++;
+      this.getSelector(this.inventory).x=this.inventorySelectorPosition.x*this.inventoryBoxSize;
     }
   }
 
   // Vertical movement
-  if (this.input.keyboard.checkDown(cursors.up, 250)) {
-    if(inventorySelectorPosition.y>0) {
-      inventorySelectorPosition.y--;
-      getSelector(inventory).y=inventorySelectorPosition.y*inventoryBoxSize;
+  if (this.input.keyboard.checkDown(this.cursors.up, 250)) {
+    if(this.inventorySelectorPosition.y>0) {
+      this.inventorySelectorPosition.y--;
+      this.getSelector(this.inventory).y=this.inventorySelectorPosition.y*this.inventoryBoxSize;
     }
-  } else if (this.input.keyboard.checkDown(cursors.down, 250)) {
-    if(inventorySelectorPosition.y<inventoryMaxY-1) {
-      inventorySelectorPosition.y++;
-      getSelector(inventory).y=inventorySelectorPosition.y*inventoryBoxSize;
+  } else if (this.input.keyboard.checkDown(this.cursors.down, 250)) {
+    if(this.inventorySelectorPosition.y<this.inventoryMaxY-1) {
+      this.inventorySelectorPosition.y++;
+      this.getSelector(this.inventory).y=this.inventorySelectorPosition.y*this.inventoryBoxSize;
     }
   }
-  //console.log(inventoryBag);
+  //console.log(this.inventoryBag);
 }else{
-  inventorySelectorPosition = {x:0 , y:0};
-  inventory.setDepth(-40);
+  this.inventorySelectorPosition = {x:0 , y:0};
+  this.inventory.setDepth(-40);
   
   // Horizontal movement
-  if (cursors.left.isDown) {
-    player.body.setVelocityX(-speed);
-  } else if (cursors.right.isDown) {
-    player.body.setVelocityX(speed);
+  if (this.cursors.left.isDown) {
+    this.player.body.setVelocityX(-speed);
+  } else if (this.cursors.right.isDown) {
+    this.player.body.setVelocityX(speed);
   }
 
   // Vertical movement
-  if (cursors.up.isDown) {
-    player.body.setVelocityY(-speed);
-  } else if (cursors.down.isDown) {
-    player.body.setVelocityY(speed);
+  if (this.cursors.up.isDown) {
+    this.player.body.setVelocityY(-speed);
+  } else if (this.cursors.down.isDown) {
+    this.player.body.setVelocityY(speed);
   }
 
   // Normalize and scale the velocity so that player can't move faster along a diagonal
-  player.body.velocity.normalize().scale(speed);
+  this.player.body.velocity.normalize().scale(speed);
 
   // Update the animation last and give left/right animations precedence over up/down animations
-  if (cursors.left.isDown) {
-    player.anims.play("misa-left-walk", true);
-  } else if (cursors.right.isDown) {
-    player.anims.play("misa-right-walk", true);
-  } else if (cursors.up.isDown) {
-    player.anims.play("misa-back-walk", true);
-  } else if (cursors.down.isDown) {
-    player.anims.play("misa-front-walk", true);
+  if (this.cursors.left.isDown) {
+    this.player.anims.play("misa-left-walk", true);
+  } else if (this.cursors.right.isDown) {
+    this.player.anims.play("misa-right-walk", true);
+  } else if (this.cursors.up.isDown) {
+    this.player.anims.play("misa-back-walk", true);
+  } else if (this.cursors.down.isDown) {
+    this.player.anims.play("misa-front-walk", true);
   } else {
-    player.anims.stop();
+    this.player.anims.stop();
 
     // If we were moving, pick and idle frame to use
-    if (prevVelocity.x < 0) player.setTexture("atlas", "misa-left");
-    else if (prevVelocity.x > 0) player.setTexture("atlas", "misa-right");
-    else if (prevVelocity.y < 0) player.setTexture("atlas", "misa-back");
-    else if (prevVelocity.y > 0) player.setTexture("atlas", "misa-front");
+    if (prevVelocity.x < 0) this.player.setTexture("atlas", "misa-left");
+    else if (prevVelocity.x > 0) this.player.setTexture("atlas", "misa-right");
+    else if (prevVelocity.y < 0) this.player.setTexture("atlas", "misa-back");
+    else if (prevVelocity.y > 0) this.player.setTexture("atlas", "misa-front");
   }
+}
 }
 }

@@ -94,6 +94,7 @@ class Sing extends Phaser.Plugins.ScenePlugin {
         ]
         
         this.state = {};
+        this.state.lullaby =[];
         this.nodes;
         var crusher = new Tone.BitCrusher(8);
         this.sound = new Tone.PolySynth(6, Tone.Synth, {
@@ -113,7 +114,9 @@ class Sing extends Phaser.Plugins.ScenePlugin {
 
     //  Called when a Scene shuts down, it may then come back again later
     // (which will invoke the 'start' event) but should be considered dormant.
-    shutdown() { }
+    shutdown() {
+        this.stop();
+    }
 
     // called when a Scene is destroyed by the Scene Manager
     destroy() {
@@ -129,7 +132,31 @@ class Sing extends Phaser.Plugins.ScenePlugin {
         }
     }
 
+    found(){
+        if(!this.theLullaby){return false;}
+        if(this.theLullaby.length > this.state.lullaby.length)
+            return false;
+        let count =1;
+        for(var i = this.theLullaby.length-1; i>-1;i--) {
+            if(this.theLullaby[i] !== this.state.lullaby[this.state.lullaby.length-(count++)])
+                return false;
+        }
+
+        return true;
+    }
+
+    recognized(){
+        let self = this;
+        return new Promise(function (resolve, reject) {
+            (function waitForFound(){
+                if (self.found()) return resolve();
+                setTimeout(waitForFound, 0.5);
+            })();
+        });
+    }
+
     playSegment(content){
+        if(!content)return;
         let con = content.split(',');
         let t = 0;
         for(let i=0;i<con.length/2;i++){
@@ -145,6 +172,10 @@ class Sing extends Phaser.Plugins.ScenePlugin {
     init(i){
         this.nodes = i || this.sampleNodes; //TODOonly for test
         this.state.singing = true;
+    }
+
+    setTheLullaby(l){
+        this.theLullaby = l;//["C#3,0.5,G#3,0.5", " ,4n", "C#3,0.5,G#3,0.5", " ,4n"];
     }
     
     reset(id){
@@ -187,12 +218,19 @@ class Sing extends Phaser.Plugins.ScenePlugin {
     
         var allAvailableNodes = this.nodes.map(f=>f.id);
 
-        var nextNodeId = nextNodeIds[Math.floor(Math.random() * nextNodeIds.length)] ||
-                         allAvailableNodes[Math.floor(Math.random()*allAvailableNodes.length)];
+        var nextNodeId = nextNodeIds[Math.floor(Math.random() * nextNodeIds.length)];
+
+        if(nextNodeId === undefined){
+            nextNodeId = allAvailableNodes[Math.floor(Math.random()*allAvailableNodes.length)];
+        }
         
         this.state.id = nextNodeId;
+
+        let nextContent = this.nodes.filter(n => n.id === nextNodeId)[0].content;
+
+        this.state.lullaby.push(nextContent);
     
-        return this.nodes.filter(n => n.id === nextNodeId)[0].content;
+        return nextContent;
     }
     
     

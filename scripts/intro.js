@@ -2,7 +2,6 @@ class Intro extends Phaser.Scene {
 
   constructor() {
     super();
-
   }
 
   preload() {
@@ -14,52 +13,48 @@ class Intro extends Phaser.Scene {
   create() {
     this.music.play();
 
-      this.add.image(300, 300, 'yemen');
+    this.add.image(300, 300, 'yemen');
 
-      let self = this;
+    let self = this;
 
-      setTimeout(() => first(), 4000);
+    setTimeout(() => first(), 4000);
 
-      setTimeout(() => second(), 8000);
+    setTimeout(() => second(), 8000);
 
-      setTimeout(() => third(), 9000);
+    setTimeout(() => third(), 9000);
 
-      setTimeout(() => fourth(), 12000);
+    setTimeout(() => fourth(), 12000);
 
-      setTimeout(() => goToFirstLevel(), this.music.getLength()*1000);
+    setTimeout(() => goToFirstLevel(), this.music.getLength() * 1000);
 
-      this.input.keyboard.on("keydown_W",event => {
-        goToFirstLevel();
-      })
+    this.input.keyboard.on("keydown_W", event => {
+      goToFirstLevel();
+    })
 
-      const first = () => {
-        self.dialog.init();
-        self.dialog.setText("Once there was a war", true);
-      };
+    const first = () => {
+      self.dialog.init();
+      self.dialog.setText("Once there was a war", true);
+    };
 
-      const second = () => {
-        self.add.image(300, 300, 'yemen2');
-        self.dialog.closeWindow();
-      };
+    const second = () => {
+      self.add.image(300, 300, 'yemen2');
+      self.dialog.closeWindow();
+    };
 
-      const third = () => {
-        self.dialog.init();
-        self.dialog.setText("And war is never fair", true);
-      };
+    const third = () => {
+      self.dialog.init();
+      self.dialog.setText("And war is never fair", true);
+    };
 
-      const fourth = () => {
-        self.dialog.closeWindow();
-      };
+    const fourth = () => {
+      self.dialog.closeWindow();
+    };
 
-      const goToFirstLevel = () => {
-        this.music.stop();
-        this.scene.start('1');
-      };
+    const goToFirstLevel = () => {
+      this.music.stop();
+      this.scene.start('1');
+    };
   }
-
-
-
-
 }
 
 

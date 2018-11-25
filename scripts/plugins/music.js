@@ -43,7 +43,7 @@ class MusicUtility extends Phaser.Plugins.ScenePlugin {
         eventEmitter.on('destroy', this.destroy, this);
     }
 
-    shutdown() { 
+    shutdown() {
         Tone.Transport.cancel();
     }
 
@@ -52,21 +52,21 @@ class MusicUtility extends Phaser.Plugins.ScenePlugin {
         this.scene = undefined;
     }
 
-    init(level){
+    init(level) {
         this.level = level;
     }
 
-    files(name){
-        return "../../assets/sounds/"+name+".mid"
+    files(name) {
+        return "../../assets/sounds/" + name + ".mid"
     }
 
-    preload(name){
+    preload(name) {
         name = name || "gameplay"
         let self = this;
         MidiConvert.load(this.files(name), function (midi) {
             self.midi = midi;
         })
-        
+
     }
 
     play() {
@@ -77,34 +77,33 @@ class MusicUtility extends Phaser.Plugins.ScenePlugin {
         Tone.Transport.loopStart = 0;
         this.getLength();
         Tone.Transport.loopEnd = this.midiLength;
-        
+
         let self = this;
         var midiPart = new Tone.Part(function (time, note) {
             self.synth.triggerAttackRelease(note.name, note.duration, time, note.velocity)
         }, this.midi.tracks[0].notes, this.midi.tracks[1].notes).start();
 
-        midiPart.probability = 1 - ((self.level || 1)-1)/10; // more than that? 
+        midiPart.probability = 1 - ((self.level || 1) - 1) / 10; // more than that? 
 
         Tone.Transport.start();
-
     }
 
-    stop(){
+    stop() {
         Tone.Transport.stop();
     }
 
-    getLength(){
-        const lastNote = this.midi.tracks[0].notes[this.midi.tracks[0].notes.length-1]; //TODO check other tracks
+    getLength() {
+        const lastNote = this.midi.tracks[0].notes[this.midi.tracks[0].notes.length - 1]; //TODO check other tracks
         this.midiLength = (lastNote.time + lastNote.duration);
         return this.midiLength;
     }
 
     mute() {
-        if(this.isMute){
-            this.synth.volume.rampTo(0,1);
+        if (this.isMute) {
+            this.synth.volume.rampTo(0, 1);
             this.isMute = false;
         } else {
-            this.synth.volume.rampTo(-Infinity,1);
+            this.synth.volume.rampTo(-Infinity, 1);
             this.isMute = true;
         }
     }

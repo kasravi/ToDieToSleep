@@ -96,14 +96,38 @@ class Sing extends Phaser.Plugins.ScenePlugin {
         this.state = {};
         this.state.lullaby =[];
         this.nodes;
-        var crusher = new Tone.BitCrusher(8);
-        this.sound = new Tone.PolySynth(6, Tone.Synth, {
-			"oscillator" : {
-				"partials" : [0, 2, 3, 4],
-			}
-		}).connect(crusher).toMaster();
+        // var crusher = new Tone.BitCrusher(8);
+        // this.sound = new Tone.PolySynth(6, Tone.Synth, {
+		// 	"oscillator" : {
+		// 		"partials" : [0, 2, 3, 4],
+		// 	}
+		// }).connect(crusher).toMaster();
         
-        this.sound.volume.value = 0;
+        // this.sound.volume.value = 0;
+        var options = {
+            harmonicity: 3,
+            modulationIndex: 0.1,
+            detune: 10,
+            oscillator: {
+                type: "sine"
+            },
+            envelope: {
+                attack: 0.01,
+                decay: 0.4,
+                sustain: 0.7,
+                release: 1
+            },
+            modulation: {
+                type: "square"
+            },
+            modulationEnvelope: {
+                attack: 0.01,
+                decay: 0.5,
+                sustain: 0.7,
+                release: 1
+            }
+        }
+        this.sound = new Tone.PolySynth(8, Tone.FMSynth, options).toMaster();
     }
 
     boot() {

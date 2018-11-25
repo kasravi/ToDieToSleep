@@ -16,7 +16,8 @@ const config = {
     plugins: {
         scene: [
             { key: 'dialog', plugin: Dialog, mapping: 'dialog' },
-            { key: 'sing', plugin: Sing, mapping: 'sing' }
+            { key: 'sing', plugin: Sing, mapping: 'sing' },
+            { key: 'music', plugin: MusicUtility, mapping: 'music' }
         ]
     },
     scene: [ Level1, Level2]

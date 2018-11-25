@@ -39,6 +39,8 @@ preload() {
 }
 
 create() {
+  this.music.init(parseInt(this.name));
+  this.music.play();
   //this.scene.start('2'); next level name
 
   const map = this.make.tilemap({ key: "map"+this.name });
@@ -164,6 +166,7 @@ create() {
 
   this.input.keyboard.on("keydown_Q",event => {
     this.showInventory = !this.showInventory;
+    this.music.mute();
   })
   
   this.input.keyboard.on("keydown_T",event => {
@@ -172,12 +175,17 @@ create() {
       this.sing.reset()
       this.sing.sing();
       if(this.isNearChild){
-        this.sing.recognized().then(()=>this.scene.start('2'));
+        this.sing.recognized().then(()=>goToNextLevel());
       }
     } else {
       this.sing.stop();
     }
   });
+
+  const goToNextLevel = ()=>{
+    this.music.stop();
+    this.scene.start('2');
+  }
 
   const buildWalkingNodes = (bag)=>{
     if(!bag) return;

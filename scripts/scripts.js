@@ -36,10 +36,13 @@ preload() {
   // If you don't use an atlas, you can do the same thing with a spritesheet, see:
   //  https://labs.phaser.io/view.html?src=src/animation/single%20sprite%20sheet.js
   this.load.atlas("atlas", "../assets/atlas/atlas.png", "../assets/atlas/atlas.json");
+
+  this.music.init(parseInt(this.name));
+  this.music.preload();
 }
 
 create() {
-  this.music.init(parseInt(this.name));
+  
   this.music.play();
   //this.scene.start('2'); next level name
 

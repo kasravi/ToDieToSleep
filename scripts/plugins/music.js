@@ -44,7 +44,7 @@ class MusicUtility extends Phaser.Plugins.ScenePlugin {
     }
 
     shutdown() { 
-        
+        Tone.Transport.cancel();
     }
 
     destroy() {
@@ -56,30 +56,47 @@ class MusicUtility extends Phaser.Plugins.ScenePlugin {
         this.level = level;
     }
 
-    play() {
+    files(name){
+        return "../../assets/sounds/"+name+".mid"
+    }
+
+    preload(name){
+        name = name || "gameplay"
         let self = this;
-        MidiConvert.load("../../assets/sounds/gameplay.mid", function (midi) {
-
-            Tone.Transport.bpm.value = midi.header.bpm;
-
-            Tone.Transport.loop = true;
-            Tone.Transport.loopStart = 0;
-            const lastNote = midi.tracks[0].notes[midi.tracks[0].notes.length-1]; //TODO check other tracks
-            Tone.Transport.loopEnd = lastNote.time + lastNote.duration;
-            
-
-            var midiPart = new Tone.Part(function (time, note) {
-                self.synth.triggerAttackRelease(note.name, note.duration, time, note.velocity)
-            }, midi.tracks[0].notes, midi.tracks[1].notes).start();
-
-            midiPart.probability = 1 - (self.level-1)/10; // more than that? 
-
-            Tone.Transport.start();
+        MidiConvert.load(this.files(name), function (midi) {
+            self.midi = midi;
         })
+        
+    }
+
+    play() {
+
+        Tone.Transport.bpm.value = this.midi.header.bpm;
+
+        Tone.Transport.loop = true;
+        Tone.Transport.loopStart = 0;
+        this.getLength();
+        Tone.Transport.loopEnd = this.midiLength;
+        
+        let self = this;
+        var midiPart = new Tone.Part(function (time, note) {
+            self.synth.triggerAttackRelease(note.name, note.duration, time, note.velocity)
+        }, this.midi.tracks[0].notes, this.midi.tracks[1].notes).start();
+
+        midiPart.probability = 1 - ((self.level || 1)-1)/10; // more than that? 
+
+        Tone.Transport.start();
+
     }
 
     stop(){
         Tone.Transport.stop();
+    }
+
+    getLength(){
+        const lastNote = this.midi.tracks[0].notes[this.midi.tracks[0].notes.length-1]; //TODO check other tracks
+        this.midiLength = (lastNote.time + lastNote.duration);
+        return this.midiLength;
     }
 
     mute() {

@@ -1,3 +1,5 @@
+
+var IntroScene = new Intro();
 var Level1 = new SceneBuilder("1");
 var Level2 = new SceneBuilder("2");
 
@@ -20,7 +22,7 @@ const config = {
             { key: 'music', plugin: MusicUtility, mapping: 'music' }
         ]
     },
-    scene: [ Level1, Level2]
+    scene: [ IntroScene, Level1, Level2]
   };
   
   const game = new Phaser.Game(config);

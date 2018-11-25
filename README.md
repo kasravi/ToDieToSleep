@@ -8,3 +8,13 @@ For in that sleep of death what dreams may come
 When we have shuffled off this mortal coil, 
 Must give us pause.
 Hamlet (3.1.64-98)
+
+### To Run
+requires node 8.10
+
+```bash
+git clone https://github.com/kasravi/ToDieToSleep.git # or download zip
+cd ToDieToSleep
+npm install
+npm run serve
+```

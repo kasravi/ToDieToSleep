@@ -78,7 +78,7 @@
                  "properties":
                     {
                      "dialog":"Lorem ipsum dolor sit amet, consectetur adipiscing elit,|| sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-                     "tune":"E3,1"
+                     "tune":"D3,1.2,C3,0.1,B2,0.9"
                     },
                  "propertytypes":
                     {
@@ -100,7 +100,7 @@
                  "properties":
                     {
                      "dialog":"Lorem ipsum dolor sit amet, consectetur adipiscing elit,|| sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-                     "tune":"G3,1"
+                     "tune":"D3,0.1,C3,0.9"
                     },
                  "propertytypes":
                     {
@@ -122,7 +122,7 @@
                  "properties":
                     {
                      "dialog":"Lorem ipsum dolor sit amet, consectetur adipiscing elit,|| sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-                     "tune":"C#3,0.5,G#3,0.5"
+                     "tune":"B2,0.1,A2,0.9"
                     },
                  "propertytypes":
                     {
@@ -144,7 +144,7 @@
                  "properties":
                     {
                      "dialog":"Lorem ipsum dolor sit amet, consectetur adipiscing elit,|| sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-                     "tune":"A3,0.5,G3,0.5"
+                     "tune":"A2,0.1,G2,0.9"
                     },
                  "propertytypes":
                     {
@@ -164,7 +164,7 @@
                  "name":"child",
                  "properties":
                     {
-                     "lullaby":"C#3,0.5,G#3,0.5; ,4n;C#3,0.5,G#3,0.5; ,4n"
+                     "lullaby":"D3,1.2,C3,0.1,B2,0.9;D3,0.1,C3,0.9;B2,0.1,A2,0.9;C3,0.1,B2,0.9;A2,0.1,G2,0.9; ,4n"
                     },
                  "propertytypes":
                     {

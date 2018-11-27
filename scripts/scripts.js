@@ -105,6 +105,8 @@ class SceneBuilder extends Phaser.Scene {
       this.inventoryBag.tunes.push(narrator.data.list.tune);
       this.dialog.init();
       this.dialog.setText(narrator.data.list.dialog, true);
+      this.sing.singPart();
+      this.music.FadeInOUt();
       narrator.destroy();
     }
 
@@ -177,15 +179,21 @@ class SceneBuilder extends Phaser.Scene {
     this.input.keyboard.on("keydown_Q", event => {
       this.showInventory = !this.showInventory;
       this.music.mute();
+      //this.sing.singPart();
     })
 
     this.input.keyboard.on("keydown_T", event => {
-      if (!this.sing.isSinging()) {
+      
+      if (!this.sing.isSinging() && this.inventoryBag.lullaby.length>0) {
         this.sing.init(buildWalkingNodes(this.inventoryBag));
         this.sing.reset()
         this.sing.sing();
         if (this.isNearChild) {
-          this.sing.recognized().then(() => goToNextLevel());
+          this.sing.recognized().then(()=>{
+            self.add.sprite(1, 1, 'note').setScrollFactor(0).setDepth(50);
+            self.camera.fadeOut(15000);
+            self.sing.singLullaby().then(() => goToNextLevel())
+          });
         }
       } else {
         this.sing.stop();
@@ -422,7 +430,7 @@ class SceneBuilder extends Phaser.Scene {
         }
       }
     } else {
-      this.inventorySelectorPosition = { x: 0, y: 0 };
+      //this.inventorySelectorPosition = { x: 0, y: 0 };
       this.inventory.setDepth(-40);
 
       if (this.cursors.left.isDown) {

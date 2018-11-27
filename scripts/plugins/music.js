@@ -69,6 +69,11 @@ class MusicUtility extends Phaser.Plugins.ScenePlugin {
 
     }
 
+    FadeInOUt(){
+        this.synth.volume.rampTo(-30,4);
+        this.synth.volume.rampTo(0,4,10);
+    }
+
     play() {
 
         Tone.Transport.bpm.value = this.midi.header.bpm;

@@ -120,9 +120,19 @@ class Sing extends Phaser.Plugins.ScenePlugin {
             }
         }
         this.sound = new Tone.PolySynth(8, Tone.FMSynth, options).toMaster();
+
+        this.realSinger = new Tone.Player({
+            "url" : "../../assets/sounds/lullabies/1.mp3",
+            'fadeIn': 20,
+            'fadeOut': 20,
+            'volume':0
+        }).toMaster();
+
     }
 
     boot() {
+        
+
         var eventEmitter = this.systems.events;
         eventEmitter.on('shutdown', this.shutdown, this);
         eventEmitter.on('destroy', this.destroy, this);
@@ -145,6 +155,43 @@ class Sing extends Phaser.Plugins.ScenePlugin {
         }
     }
 
+    singLullaby(started, count) {
+        let self = this;
+        return new Promise((resolve,reject)=>{
+            if(!self.theLullaby){
+                reject();
+            }
+            if(count>2){
+                resolve();
+            }
+            started = started || false;
+            if(count === undefined){
+                count = 0;
+            } else {
+                count++;
+            }
+            if(!started){
+                self.realSinger.loop = true;
+                self.realSinger.fadeIn= 20;
+                self.realSinger.fadeOut = 20;
+                self.realSinger.start(20);
+            }
+
+            let t = self.playSegment(self.theLullaby.join(","));
+            if (this.state.singing) {
+                self.sound.volume.rampTo(-3*count);
+                setTimeout(() => self.singLullaby(true, count).then(resolve), t * 1000);
+            }
+        })
+    }
+
+    singPart(){
+        const offset = Math.random()*(this.realSinger.buffer.duration-5);
+        this.realSinger.fadeIn = 4;
+        this.realSinger.fadeOut = 4;
+        this.realSinger.start(4,offset,offset+5);
+    }
+
     found() {
         if (!this.theLullaby) { return false; }
         if (this.theLullaby.length > this.state.lullaby.length)
@@ -160,6 +207,7 @@ class Sing extends Phaser.Plugins.ScenePlugin {
     recognized() {
         let self = this;
         return new Promise(function (resolve, reject) {
+            resolve();
             (function waitForFound() {
                 if (self.found()) return resolve();
                 setTimeout(waitForFound, 0.5);
@@ -197,6 +245,7 @@ class Sing extends Phaser.Plugins.ScenePlugin {
 
     stop() {
         this.state.singing = false;
+        this.realSinger.stop();
     }
 
     isSinging() {
